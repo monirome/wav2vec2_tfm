@@ -215,13 +215,13 @@ training_args = TrainingArguments(
   per_device_train_batch_size=8,
   gradient_accumulation_steps=2,
   evaluation_strategy="steps",
-  num_train_epochs=30,
+  num_train_epochs=5,
   fp16=True,
-  save_steps=400,
-  eval_steps=10,
+  save_steps=200,
+  eval_steps=30,
   logging_steps=10,
   learning_rate=3e-4,
-  warmup_steps=500,
+  warmup_steps=250,
   save_total_limit=2,
 )
 
