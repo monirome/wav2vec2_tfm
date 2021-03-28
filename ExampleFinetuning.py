@@ -217,10 +217,10 @@ training_args = TrainingArguments(
   evaluation_strategy="steps",
   num_train_epochs=40,
   fp16=True,
-  save_steps=2000, 
-  eval_steps=2000,
+  save_steps=5000, 
+  eval_steps=5000,
   logging_steps=400,
-  learning_rate=0.9e-4,
+  learning_rate=2e-4,
   warmup_steps=500,
   save_total_limit=3,
 )
