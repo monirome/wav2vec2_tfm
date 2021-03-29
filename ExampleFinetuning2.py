@@ -202,7 +202,6 @@ model = Wav2Vec2ForCTC.from_pretrained(
     feat_proj_dropout=0.05,
     mask_time_prob=0.05,
     layerdrop=0.04,
-    learning_rate=3e-4,
     gradient_checkpointing=True,
     ctc_loss_reduction="mean",
     pad_token_id=processor.tokenizer.pad_token_id,
@@ -223,7 +222,7 @@ training_args = TrainingArguments(
   save_steps=5000, 
   eval_steps=5000,
   logging_steps=400,
-  learning_rate=2e-4,
+  learning_rate=3e-4,
   warmup_steps=500,
   save_total_limit=3,
 )
