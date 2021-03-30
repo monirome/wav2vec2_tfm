@@ -222,7 +222,7 @@ model.freeze_feature_extractor()
 
 training_args = TrainingArguments(
   #output_dir="/content/gdrive/MyDrive/wav2vec2-large-xlsr-turkish-demo",
-  output_dir="./wav2vec2-large-xlsr-turkish-demo_2",
+  output_dir="./wav2vec2-large-xlsr-turkish-demo_3",
   group_by_length=True,
   per_device_train_batch_size=16,
   gradient_accumulation_steps=2,
