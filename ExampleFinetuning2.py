@@ -13,8 +13,9 @@ def show_random_elements(dataset, num_examples=10):
         while pick in picks:
             pick = random.randint(0, len(dataset)-1)
         picks.append(pick)
+    
     df = pd.DataFrame(dataset[picks])
-    print(df)
+    display(HTML(df.to_html()))
 
 
 def remove_special_characters(batch):
@@ -31,9 +32,18 @@ show_random_elements(common_voice_train.remove_columns(["path"]))
 ##################################################
 # Normalize text ###############################
 chars_to_ignore_regex = '[\,\?\.\!\-\;\:\"\“\%\‘\”\�]'
-common_voice_train = common_voice_train.map(remove_special_characters, remove_columns=["age"])
-common_voice_test = common_voice_test.map(remove_special_characters, remove_columns=["age"])
+
+def remove_special_characters(batch):
+    batch["sentence"] = re.sub(chars_to_ignore_regex, '', batch["sentence"]).lower() + " "
+    return batch
+
+common_voice_train = common_voice_train.map(remove_special_characters)
+common_voice_test = common_voice_test.map(remove_special_characters)
 show_random_elements(common_voice_train.remove_columns(["path"]))
+
+# common_voice_train = common_voice_train.map(remove_special_characters, remove_columns=["age"])
+# common_voice_test = common_voice_test.map(remove_special_characters, remove_columns=["age"])
+# show_random_elements(common_voice_train.remove_columns(["path"]))
 
 
 ####################################################
@@ -94,8 +104,8 @@ def resample(batch):
     batch["sampling_rate"] = 16_000
     return batch
 
-common_voice_train = common_voice_train.map(resample, num_proc=10)
-common_voice_test = common_voice_test.map(resample, num_proc=10)
+common_voice_train = common_voice_train.map(resample, num_proc=15)
+common_voice_test = common_voice_test.map(resample, num_proc=15)
 
 
 ##############################################
@@ -110,8 +120,8 @@ def prepare_dataset(batch):
         batch["labels"] = processor(batch["target_text"]).input_ids
     return batch
 
-common_voice_train = common_voice_train.map(prepare_dataset, remove_columns=common_voice_train.column_names, batch_size=8, num_proc=10, batched=True)
-common_voice_test = common_voice_test.map(prepare_dataset, remove_columns=common_voice_test.column_names, batch_size=8, num_proc=10, batched=True)
+common_voice_train = common_voice_train.map(prepare_dataset, remove_columns=common_voice_train.column_names, batch_size=8, num_proc=15, batched=True)
+common_voice_test = common_voice_test.map(prepare_dataset, remove_columns=common_voice_test.column_names, batch_size=8, num_proc=15, batched=True)
 
 
 ###################################################
@@ -195,8 +205,8 @@ from transformers import Wav2Vec2ForCTC, TrainingArguments, Trainer
 
 model = Wav2Vec2ForCTC.from_pretrained(
     "facebook/wav2vec2-large-xlsr-53",
-    attention_dropout=0.2,
-    activation_dropout=0.1,
+    attention_dropout=0.1,
+    activation_dropout=0.05,
     hidden_dropout=0.05,
     final_dropout=0.1,
     feat_proj_dropout=0.05,
@@ -214,17 +224,17 @@ training_args = TrainingArguments(
   #output_dir="/content/gdrive/MyDrive/wav2vec2-large-xlsr-turkish-demo",
   output_dir="./wav2vec2-large-xlsr-turkish-demo_2",
   group_by_length=True,
-  per_device_train_batch_size=8,
+  per_device_train_batch_size=16,
   gradient_accumulation_steps=2,
   evaluation_strategy="steps",
-  num_train_epochs=40,
+  num_train_epochs=50,
   fp16=True,
-  save_steps=1000, 
-  eval_steps=1000,
+  save_steps=500, 
+  eval_steps=500,
   logging_steps=400,
-  learning_rate=3e-4,
+  learning_rate=2e-4,
   warmup_steps=500,
-  save_total_limit=3,
+  save_total_limit=2,
 )
 
 trainer = Trainer(
