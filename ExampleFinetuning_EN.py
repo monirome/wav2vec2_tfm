@@ -23,8 +23,9 @@ def remove_special_characters(batch):
 
 ###########################################################################################
 # Download some data to finetuning. In this case it is downloaded turkish from common voice
-common_voice_train = load_dataset("common_voice", "es", split="train")
-common_voice_test = load_dataset("common_voice", "es", split="test")
+common_voice_train = load_dataset("common_voice", "en", split="train")
+common_voice_test = load_dataset("common_voice", "en", split="test")
+print(common_voice_train)
 show_random_elements(common_voice_train.remove_columns(["path"]))
 
 
