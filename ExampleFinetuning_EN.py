@@ -23,7 +23,7 @@ def remove_special_characters(batch):
 
 ###########################################################################################
 # Download some data to finetuning. In this case it is downloaded turkish from common voice
-common_voice_train = load_dataset("common_voice", "en", split="train+validation")
+common_voice_train = load_dataset("common_voice", "en", split="train")
 common_voice_test = load_dataset("common_voice", "en", split="test")
 show_random_elements(common_voice_train.remove_columns(["path"]))
 
@@ -212,17 +212,17 @@ training_args = TrainingArguments(
   #output_dir="/content/gdrive/MyDrive/wav2vec2-large-xlsr-turkish-demo",
   output_dir="./wav2vec2-large-xlsr-turkish-demo",
   group_by_length=True,
-  per_device_train_batch_size=8,
+  per_device_train_batch_size=16,
   gradient_accumulation_steps=2,
   evaluation_strategy="steps",
-  num_train_epochs=5,
+  num_train_epochs=30,
   fp16=True,
-  save_steps=100, 
-  eval_steps=100,
-  logging_steps=100,
-  learning_rate=2e-4,
-  warmup_steps=100,
-  save_total_limit=3,
+  save_steps=400,
+  eval_steps=400,
+  logging_steps=400,
+  learning_rate=3e-4,
+  warmup_steps=500,
+  save_total_limit=2,
 )
 
 trainer = Trainer(
