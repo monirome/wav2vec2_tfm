@@ -124,8 +124,8 @@ def resample(batch):
     batch["sampling_rate"] = 16_000
     return batch
 
-common_voice_train = common_voice_train.map(resample, num_proc=10)
-common_voice_test = common_voice_test.map(resample, num_proc=10)
+common_voice_train = common_voice_train.map(resample, num_proc=2) # num_proc=10
+common_voice_test = common_voice_test.map(resample, num_proc=2) # num_proc=10
 
 
 ##############################################
