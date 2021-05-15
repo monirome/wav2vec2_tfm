@@ -23,7 +23,7 @@ for i, sample in enumerate(dummy_dataset):
 
 
 ###########################################################################################################################################
-def show_random_elements(dataset, num_examples=10):
+def show_random_elements(dataset, num_examples=2): #m_examples=10
     assert num_examples <= len(dataset), "Can't pick more elements than there are in the dataset."
     picks = []
     for _ in range(num_examples):
