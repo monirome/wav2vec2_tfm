@@ -130,18 +130,20 @@ def speech_file_to_array_fn(batch):
 
 ##############################################
 # Prepare data for training ##################
-def prepare_dataset(batch):
-    # check that all files have the correct sampling rate
-    assert (
-        len(set(batch["sampling_rate"])) == 1
-    ), f"Make sure all inputs have the same sampling rate of {processor.feature_extractor.sampling_rate}."
-    batch["input_values"] = processor(batch["speech"], sampling_rate=batch["sampling_rate"][0]).input_values
-    with processor.as_target_processor():
-        batch["labels"] = processor(batch["target_text"]).input_ids
-    return batch
+# def prepare_dataset(batch):
+#     # check that all files have the correct sampling rate
+#     assert (
+#         len(set(batch["sampling_rate"])) == 1
+#     ), f"Make sure all inputs have the same sampling rate of {processor.feature_extractor.sampling_rate}."
 
-common_voice_train = common_voice_train.map(prepare_dataset, remove_columns=common_voice_train.column_names, batch_size=8, num_proc=10, batched=True)
-common_voice_test = common_voice_test.map(prepare_dataset, remove_columns=common_voice_test.column_names, batch_size=8, num_proc=10, batched=True)
+#     batch["input_values"] = processor(batch["speech"], sampling_rate=batch["sampling_rate"][0]).input_values
+    
+#     with processor.as_target_processor():
+#         batch["labels"] = processor(batch["target_text"]).input_ids
+#     return batch
+
+# common_voice_train = common_voice_train.map(prepare_dataset, remove_columns=common_voice_train.column_names, batch_size=8, num_proc=10, batched=True)
+# common_voice_test = common_voice_test.map(prepare_dataset, remove_columns=common_voice_test.column_names, batch_size=8, num_proc=10, batched=True)
 
 
 ###################################################
@@ -246,7 +248,7 @@ training_args = TrainingArguments(
   gradient_accumulation_steps=2,
   evaluation_strategy="steps",
   num_train_epochs=30,
-  fp16=True,
+  # fp16=True,
   save_steps=400,
   eval_steps=400,
   logging_steps=400,
@@ -268,3 +270,4 @@ trainer = Trainer(
 #
 print("# START TRAINING")
 trainer.train()
+
