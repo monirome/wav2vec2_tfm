@@ -47,6 +47,12 @@ def remove_special_characters(batch):
 ###########################################################################################################################################
 common_voice_train=load_dataset("json", data_files=[f"sample_{i}.json" for i in range(2)], split="train")
 common_voice_test=load_dataset("json", data_files=[f"sample_{i}.json" for i in range(2)], split="train")
+                  
+common_voice_train = common_voice_train.rename_column("file", "path")
+common_voice_train = common_voice_train.rename_column("transcription", "sentence")
+
+common_voice_test = common_voice_test.rename_column("file", "path")
+common_voice_test = common_voice_test.rename_column("transcription", "sentence")
 
 ###########################################################################################################################################
 show_random_elements(common_voice_train.remove_columns(["path"]))
