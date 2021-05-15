@@ -116,16 +116,16 @@ def speech_file_to_array_fn(batch):
 
 ########################################
 # DOWNSAMPLE DATA #####################
-import librosa
-import numpy as np
+# import librosa
+# import numpy as np
 
-def resample(batch):
-    batch["speech"] = librosa.resample(np.asarray(batch["speech"]), 48_000, 16_000)
-    batch["sampling_rate"] = 16_000
-    return batch
+# def resample(batch):
+#     batch["speech"] = librosa.resample(np.asarray(batch["speech"]), 48_000, 16_000)
+#     batch["sampling_rate"] = 16_000
+#     return batch
 
-common_voice_train = common_voice_train.map(resample, num_proc=2) # num_proc=10
-common_voice_test = common_voice_test.map(resample, num_proc=2) # num_proc=10
+# common_voice_train = common_voice_train.map(resample, num_proc=2) # num_proc=10
+# common_voice_test = common_voice_test.map(resample, num_proc=2) # num_proc=10
 
 
 ##############################################
