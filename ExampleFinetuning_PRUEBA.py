@@ -5,7 +5,8 @@ import pandas as pd
 import re
 from IPython.display import display, HTML
 
-----------------------------------------------------------------------------------------------------------------------
+
+###########################################################################################################################################
 df = pd.read_csv("df_final_2.csv",delimiter=',')
 df1=df[:2]
 
@@ -19,7 +20,9 @@ for i, sample in enumerate(dummy_dataset):
     with open(f'sample_{i}.json', 'w') as outfile:
         json.dump(sample, outfile)
                   
-----------------------------------------------------------------------------------------------------------------------
+
+
+###########################################################################################################################################
 def show_random_elements(dataset, num_examples=10):
     assert num_examples <= len(dataset), "Can't pick more elements than there are in the dataset."
     picks = []
@@ -40,10 +43,12 @@ def remove_special_characters(batch):
 # Download some data to finetuning. In this case it is downloaded turkish from common voice
 # common_voice_train = load_dataset("common_voice", "en", split="train")
 # common_voice_test = load_dataset("common_voice", "en", split="test")
-----------------------------------------------------------------------------------------------------------------------
+
+###########################################################################################################################################
 common_voice_train=load_dataset("json", data_files=[f"sample_{i}.json" for i in range(2)], split="train")
 common_voice_test=load_dataset("json", data_files=[f"sample_{i}.json" for i in range(2)], split="train")
-----------------------------------------------------------------------------------------------------------------------
+
+###########################################################################################################################################
 show_random_elements(common_voice_train.remove_columns(["path"]))
 
 
