@@ -5,6 +5,21 @@ import pandas as pd
 import re
 from IPython.display import display, HTML
 
+----------------------------------------------------------------------------------------------------------------------
+df = pd.read_csv("df_final_2.csv",delimiter=',')
+df1=df[:2]
+
+dummy_dataset = [{"file": f"/content/ACWT01a_9.43_3.446.wav",
+                 "transcription": f"{df1['transcription'][0]}"},
+                 {"file": f"/content/ACWT01a_15.181_5.264.wav",
+                 "transcription": f"{df1['transcription'][1]}"}]
+import json
+
+for i, sample in enumerate(dummy_dataset):
+    with open(f'sample_{i}.json', 'w') as outfile:
+        json.dump(sample, outfile)
+                  
+----------------------------------------------------------------------------------------------------------------------
 def show_random_elements(dataset, num_examples=10):
     assert num_examples <= len(dataset), "Can't pick more elements than there are in the dataset."
     picks = []
@@ -23,9 +38,12 @@ def remove_special_characters(batch):
 
 ###########################################################################################
 # Download some data to finetuning. In this case it is downloaded turkish from common voice
-common_voice_train = load_dataset("common_voice", "en", split="train")
-common_voice_test = load_dataset("common_voice", "en", split="test")
-
+# common_voice_train = load_dataset("common_voice", "en", split="train")
+# common_voice_test = load_dataset("common_voice", "en", split="test")
+----------------------------------------------------------------------------------------------------------------------
+common_voice_train=load_dataset("json", data_files=[f"sample_{i}.json" for i in range(2)], split="train")
+common_voice_test=load_dataset("json", data_files=[f"sample_{i}.json" for i in range(2)], split="train")
+----------------------------------------------------------------------------------------------------------------------
 show_random_elements(common_voice_train.remove_columns(["path"]))
 
 
@@ -82,8 +100,8 @@ def speech_file_to_array_fn(batch):
     batch["target_text"] = batch["sentence"]
     return batch
 
-common_voice_train = common_voice_train.map(speech_file_to_array_fn, remove_columns=common_voice_train.column_names)
-common_voice_test = common_voice_test.map(speech_file_to_array_fn, remove_columns=common_voice_test.column_names)
+# common_voice_train = common_voice_train.map(speech_file_to_array_fn, remove_columns=common_voice_train.column_names)
+# common_voice_test = common_voice_test.map(speech_file_to_array_fn, remove_columns=common_voice_test.column_names)
 
 ########################################
 # DOWNSAMPLE DATA #####################
@@ -211,7 +229,7 @@ model.freeze_feature_extractor()
 
 training_args = TrainingArguments(
   #output_dir="/content/gdrive/MyDrive/wav2vec2-large-xlsr-turkish-demo",
-  output_dir="./wav2vec2-large-xlsr-turkish-demo",
+  output_dir="./wav2vec2-large-xlsr-PRUEBA-APHASIA",
   group_by_length=True,
   per_device_train_batch_size=16,
   gradient_accumulation_steps=2,
