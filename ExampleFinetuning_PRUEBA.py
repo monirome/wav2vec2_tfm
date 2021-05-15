@@ -10,9 +10,9 @@ from IPython.display import display, HTML
 df = pd.read_csv("df_final_2.csv",delimiter=',')
 df1=df[:2]
 
-dummy_dataset = [{"file": f"/content/ACWT01a_9.43_3.446.wav",
+dummy_dataset = [{"file": f"ACWT01a_9.43_3.446.wav",
                  "transcription": f"{df1['transcription'][0]}"},
-                 {"file": f"/content/ACWT01a_15.181_5.264.wav",
+                 {"file": f"ACWT01a_15.181_5.264.wav",
                  "transcription": f"{df1['transcription'][1]}"}]
 import json
 
