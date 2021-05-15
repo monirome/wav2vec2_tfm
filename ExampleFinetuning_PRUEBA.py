@@ -61,8 +61,8 @@ show_random_elements(common_voice_train.remove_columns(["path"]))
 ##################################################
 # Normalize text ###############################
 chars_to_ignore_regex = '[\,\?\.\!\-\;\:\"\“\%\‘\”\�]'
-common_voice_train = common_voice_train.map(remove_special_characters, remove_columns=["age"])
-common_voice_test = common_voice_test.map(remove_special_characters, remove_columns=["age"])
+#common_voice_train = common_voice_train.map(remove_special_characters, remove_columns=["age"])
+#common_voice_test = common_voice_test.map(remove_special_characters, remove_columns=["age"])
 show_random_elements(common_voice_train.remove_columns(["path"]))
 
 
