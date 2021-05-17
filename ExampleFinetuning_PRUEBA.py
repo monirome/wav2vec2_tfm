@@ -1,43 +1,102 @@
 from datasets import load_dataset, load_metric
-from datasets import ClassLabel
 import random
 import pandas as pd
 import re
-from IPython.display import display, HTML
+import numpy as np
+import json
+import logging
+from transformers.trainer_utils import get_last_checkpoint, is_main_process
+import transformers
+from transformers import (
+    HfArgumentParser,
+    Trainer,
+    TrainingArguments,
+    Wav2Vec2CTCTokenizer,
+    Wav2Vec2FeatureExtractor,
+    Wav2Vec2ForCTC,
+    Wav2Vec2Processor,
+    is_apex_available,
+    set_seed,
+)
+import sys
+transformers.logging.set_verbosity_info()
+logger = logging.getLogger(__name__)
+
+
+##########################################################################33
+training_args = TrainingArguments(
+    # output_dir="/content/gdrive/MyDrive/wav2vec2-large-xlsr-turkish-demo",
+    output_dir="./wav2vec2-large-xlsr-PRUEBA-APHASIA",
+    group_by_length=True,
+    per_device_train_batch_size=4,
+    gradient_accumulation_steps=1,
+    evaluation_strategy="steps",
+    num_train_epochs=30,
+    fp16=True,
+    save_steps=500,
+    eval_steps=500,
+    logging_steps=500,
+    learning_rate=0.0004,
+    warmup_steps=500,
+    save_total_limit=3,
+    do_train=True,
+    do_eval=True
+)
+##################################33
+
+# Setup logging
+logging.basicConfig(
+    format="%(asctime)s - %(levelname)s - %(name)s -   %(message)s",
+    datefmt="%m/%d/%Y %H:%M:%S",
+    handlers=[logging.StreamHandler(sys.stdout)],
+    )
+logger.setLevel(logging.INFO if is_main_process(training_args.local_rank) else logging.WARN)
+
+# Log on each process the small summary:
+logger.warning(
+    f"Process rank: {training_args.local_rank}, device: {training_args.device}, n_gpu: {training_args.n_gpu}"
+    + f"distributed training: {bool(training_args.local_rank != -1)}, 16-bits training: {training_args.fp16}"
+)
+# Set the verbosity to info of the Transformers logger (on main process only):
+if is_main_process(training_args.local_rank):
+    transformers.utils.logging.set_verbosity_info()
+logger.info("Training/evaluation parameters %s", training_args)
+
+# Set seed before initializing model.
+set_seed(training_args.seed)
 
 
 ###########################################################################################################################################
-df = pd.read_csv("df_final_2.csv",delimiter=',')
-df1=df[:2]
+num_file_train=1000
+num_file_eval=200
 
-dummy_dataset = [{"file": "ACWT01a_9.43_3.446.wav",
-                 "transcription": f"{df1['transcription'][0]}"},
-                 {"file": "ACWT01a_15.181_5.264.wav",
-                 "transcription": f"{df1['transcription'][1]}"}]
-import json
+df = pd.read_csv("df_final.csv", delimiter=',')
+
+dummy_dataset = []
+for item in df.iterrows():
+    dummy_dataset.append({"file": "/data/APHASIA/audios/"+item[1]["file_cut"],
+                          "transcription": f"{item[1]['transcription']}"})
 
 for i, sample in enumerate(dummy_dataset):
-    with open(f'sample_{i}.json', 'w') as outfile:
+    with open(f'jsons/sample_{i}.json', 'w') as outfile:
         json.dump(sample, outfile)
-                  
 
 
 ###########################################################################################################################################
-def show_random_elements(dataset, num_examples=2): #m_examples=10
-    assert num_examples <= len(dataset), "Can't pick more elements than there are in the dataset."
-    picks = []
-    for _ in range(num_examples):
-        pick = random.randint(0, len(dataset)-1)
-        while pick in picks:
-            pick = random.randint(0, len(dataset)-1)
-        picks.append(pick)
-    df = pd.DataFrame(dataset[picks])
-    print(df)
+# def show_random_elements(dataset, num_examples=2):  # m_examples=10
+#     assert num_examples <= len(dataset), "Can't pick more elements than there are in the dataset."
+#     picks = []
+#     for _ in range(num_examples):
+#         pick = random.randint(0, len(dataset) - 1)
+#         while pick in picks:
+#             pick = random.randint(0, len(dataset) - 1)
+#         picks.append(pick)
+#     df = pd.DataFrame(dataset[picks])
+#     print(df)
 
-
-def remove_special_characters(batch):
-    batch["sentence"] = re.sub(chars_to_ignore_regex, '', batch["sentence"]).lower() + " "
-    return batch
+#def remove_special_characters(batch):
+#    batch["sentence"] = re.sub(chars_to_ignore_regex, '', batch["sentence"]).lower() + " "
+#    return batch
 
 ###########################################################################################
 # Download some data to finetuning. In this case it is downloaded turkish from common voice
@@ -45,9 +104,9 @@ def remove_special_characters(batch):
 # common_voice_test = load_dataset("common_voice", "en", split="test")
 
 ###########################################################################################################################################
-common_voice_train=load_dataset("json", data_files=[f"sample_{i}.json" for i in range(2)], split="train")
-common_voice_test=load_dataset("json", data_files=[f"sample_{i}.json" for i in range(2)], split="train")
-                  
+common_voice_train = load_dataset("json", data_files=[f"jsons/sample_{i}.json" for i in range(num_file_train)], split="train")
+common_voice_test = load_dataset("json", data_files=[f"jsons/sample_{i}.json" for i in range(num_file_train, num_file_train+num_file_eval)], split="train")
+
 common_voice_train = common_voice_train.rename_column("file", "path")
 common_voice_train = common_voice_train.rename_column("transcription", "sentence")
 
@@ -55,26 +114,28 @@ common_voice_test = common_voice_test.rename_column("file", "path")
 common_voice_test = common_voice_test.rename_column("transcription", "sentence")
 
 ###########################################################################################################################################
-show_random_elements(common_voice_train.remove_columns(["path"]))
-
+#show_random_elements(common_voice_train.remove_columns(["path"]),5)
 
 ##################################################
 # Normalize text ###############################
-chars_to_ignore_regex = '[\,\?\.\!\-\;\:\"\“\%\‘\”\�]'
-#common_voice_train = common_voice_train.map(remove_special_characters, remove_columns=["age"])
-#common_voice_test = common_voice_test.map(remove_special_characters, remove_columns=["age"])
-show_random_elements(common_voice_train.remove_columns(["path"]))
+# chars_to_ignore_regex = '[\,\?\.\!\-\;\:\"\“\%\‘\”\�]'
+# common_voice_train = common_voice_train.map(remove_special_characters, remove_columns=["age"])
+# common_voice_test = common_voice_test.map(remove_special_characters, remove_columns=["age"])
+#show_random_elements(common_voice_train.remove_columns(["path"]), 5)
 
 
 ####################################################
 # Extract Vocabulary ###############################
 def extract_all_chars(batch):
-  all_text = " ".join(batch["sentence"])
-  vocab = list(set(all_text))
-  return {"vocab": [vocab], "all_text": [all_text]}
+    all_text = " ".join(batch["sentence"])
+    vocab = list(set(all_text))
+    return {"vocab": [vocab], "all_text": [all_text]}
 
-vocab_train = common_voice_train.map(extract_all_chars, batched=True, batch_size=-1, keep_in_memory=True, remove_columns=common_voice_train.column_names)
-vocab_test = common_voice_test.map(extract_all_chars, batched=True, batch_size=-1, keep_in_memory=True, remove_columns=common_voice_test.column_names)
+
+vocab_train = common_voice_train.map(extract_all_chars, batched=True, batch_size=-1, keep_in_memory=True,
+                                     remove_columns=common_voice_train.column_names)
+vocab_test = common_voice_test.map(extract_all_chars, batched=True, batch_size=-1, keep_in_memory=True,
+                                   remove_columns=common_voice_test.column_names)
 vocab_list = list(set(vocab_train["vocab"][0]) | set(vocab_test["vocab"][0]))
 vocab_dict = {v: k for k, v in enumerate(vocab_list)}
 vocab_dict["|"] = vocab_dict[" "]
@@ -84,21 +145,20 @@ vocab_dict["[UNK]"] = len(vocab_dict)
 vocab_dict["[PAD]"] = len(vocab_dict)
 print(len(vocab_dict))
 
-import json
+
 with open('vocab.json', 'w') as vocab_file:
     json.dump(vocab_dict, vocab_file)
-
-
 
 #################################################################
 # PREPARE FINETUNE ######################################################
 from transformers import Wav2Vec2CTCTokenizer, Wav2Vec2FeatureExtractor, Wav2Vec2Processor
+
 tokenizer = Wav2Vec2CTCTokenizer("./vocab.json", unk_token="[UNK]", pad_token="[PAD]", word_delimiter_token="|")
-feature_extractor = Wav2Vec2FeatureExtractor(feature_size=1, sampling_rate=16000, padding_value=0.0, do_normalize=True, return_attention_mask=True)
+feature_extractor = Wav2Vec2FeatureExtractor(feature_size=1, sampling_rate=16000, padding_value=0.0, do_normalize=True,
+                                             return_attention_mask=True)
 processor = Wav2Vec2Processor(feature_extractor=feature_extractor, tokenizer=tokenizer)
 
-print(common_voice_train[0])
-
+#print(common_voice_train[0])
 
 #################################################################
 # PREPARE AUDIOS ######################################################
@@ -111,8 +171,8 @@ def speech_file_to_array_fn(batch):
     batch["target_text"] = batch["sentence"]
     return batch
 
-# common_voice_train = common_voice_train.map(speech_file_to_array_fn, remove_columns=common_voice_train.column_names)
-# common_voice_test = common_voice_test.map(speech_file_to_array_fn, remove_columns=common_voice_test.column_names)
+common_voice_train = common_voice_train.map(speech_file_to_array_fn, remove_columns=common_voice_train.column_names)
+common_voice_test = common_voice_test.map(speech_file_to_array_fn, remove_columns=common_voice_test.column_names)
 
 ########################################
 # DOWNSAMPLE DATA #####################
@@ -130,20 +190,18 @@ def speech_file_to_array_fn(batch):
 
 ##############################################
 # Prepare data for training ##################
-# def prepare_dataset(batch):
-#     # check that all files have the correct sampling rate
-#     assert (
-#         len(set(batch["sampling_rate"])) == 1
-#     ), f"Make sure all inputs have the same sampling rate of {processor.feature_extractor.sampling_rate}."
+def prepare_dataset(batch):
+    # check that all files have the correct sampling rate
+    assert (
+        len(set(batch["sampling_rate"])) == 1
+    ), f"Make sure all inputs have the same sampling rate of {processor.feature_extractor.sampling_rate}."
+    batch["input_values"] = processor(batch["speech"], sampling_rate=batch["sampling_rate"][0]).input_values
+    with processor.as_target_processor():
+        batch["labels"] = processor(batch["target_text"]).input_ids
+    return batch
 
-#     batch["input_values"] = processor(batch["speech"], sampling_rate=batch["sampling_rate"][0]).input_values
-    
-#     with processor.as_target_processor():
-#         batch["labels"] = processor(batch["target_text"]).input_ids
-#     return batch
-
-# common_voice_train = common_voice_train.map(prepare_dataset, remove_columns=common_voice_train.column_names, batch_size=8, num_proc=10, batched=True)
-# common_voice_test = common_voice_test.map(prepare_dataset, remove_columns=common_voice_test.column_names, batch_size=8, num_proc=10, batched=True)
+common_voice_train = common_voice_train.map(prepare_dataset, remove_columns=common_voice_train.column_names, batch_size=10, num_proc=20, batched=True)
+common_voice_test = common_voice_test.map(prepare_dataset, remove_columns=common_voice_test.column_names, batch_size=10, num_proc=20, batched=True)
 
 
 ###################################################
@@ -152,6 +210,7 @@ def speech_file_to_array_fn(batch):
 import torch
 from dataclasses import dataclass, field
 from typing import Any, Dict, List, Optional, Union
+
 
 @dataclass
 class DataCollatorCTCWithPadding:
@@ -184,6 +243,7 @@ class DataCollatorCTCWithPadding:
     max_length_labels: Optional[int] = None
     pad_to_multiple_of: Optional[int] = None
     pad_to_multiple_of_labels: Optional[int] = None
+
     def __call__(self, features: List[Dict[str, Union[List[int], torch.Tensor]]]) -> Dict[str, torch.Tensor]:
         # split inputs and labels since they have to be of different lenghts and need
         # different padding methods
@@ -209,6 +269,7 @@ class DataCollatorCTCWithPadding:
         batch["labels"] = labels
         return batch
 
+
 data_collator = DataCollatorCTCWithPadding(processor=processor, padding=True)
 wer_metric = load_metric("wer")
 
@@ -227,11 +288,12 @@ from transformers import Wav2Vec2ForCTC, TrainingArguments, Trainer
 
 model = Wav2Vec2ForCTC.from_pretrained(
     "facebook/wav2vec2-large-xlsr-53",
-    attention_dropout=0.1,
-    hidden_dropout=0.1,
-    feat_proj_dropout=0.0,
-    mask_time_prob=0.05,
-    layerdrop=0.1,
+    activation_dropout=0.07,
+    attention_dropout=0.2,
+    hidden_dropout=0.04,
+    feat_proj_dropout=0.2,
+    mask_time_prob=0.1,
+    layerdrop=0.05,
     gradient_checkpointing=True,
     ctc_loss_reduction="mean",
     pad_token_id=processor.tokenizer.pad_token_id,
@@ -239,23 +301,6 @@ model = Wav2Vec2ForCTC.from_pretrained(
 )
 
 model.freeze_feature_extractor()
-
-training_args = TrainingArguments(
-  #output_dir="/content/gdrive/MyDrive/wav2vec2-large-xlsr-turkish-demo",
-  output_dir="./wav2vec2-large-xlsr-PRUEBA-APHASIA",
-  group_by_length=True,
-  per_device_train_batch_size=16,
-  gradient_accumulation_steps=2,
-  evaluation_strategy="steps",
-  num_train_epochs=30,
-  fp16=True,
-  save_steps=400,
-  eval_steps=400,
-  logging_steps=400,
-  learning_rate=3e-4,
-  warmup_steps=500,
-  save_total_limit=2,
-)
 
 trainer = Trainer(
     model=model,
@@ -267,7 +312,29 @@ trainer = Trainer(
     tokenizer=processor.feature_extractor,
 )
 
-#
+if training_args.do_train:
+    #if last_checkpoint is not None:
+    #    checkpoint = last_checkpoint
+    #elif os.path.isdir(model_args.model_name_or_path):
+    #    checkpoint = model_args.model_name_or_path
+    #else:
+    checkpoint = None
+    train_result = trainer.train(resume_from_checkpoint=checkpoint)
+    trainer.save_model()
+
+    # save the feature_extractor and the tokenizer
+    if is_main_process(training_args.local_rank):
+        processor.save_pretrained(training_args.output_dir)
+
+    metrics = train_result.metrics
+    max_train_samples = (len(common_voice_train))
+    metrics["train_samples"] = min(max_train_samples, len(common_voice_train))
+
+    trainer.log_metrics("train", metrics)
+    trainer.save_metrics("train", metrics)
+    trainer.save_state()
+
+
+
 print("# START TRAINING")
 trainer.train()
-
